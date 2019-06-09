@@ -4,28 +4,35 @@ var x
 
 var xValues = [{
     label: 'poverty',
-    key: 'poverty'
+    key: 'poverty',
+    format: "%"
 }, 
 {
     label: 'age',
-    key: 'age'
+    key: 'age',
+    format: ""
 }, 
 {
     label: 'income',
-    key: 'income'
+    key: 'income',
+    format: ""
 }];
 
 var yValues = [{
     label: 'healthcare',
-    key: 'healthcare'
+    key: 'healthcare',
+    format: "%"
 }, 
 {
     label: 'smokes',
-    key: 'smokes'
+    key: 'smokes',
+    format: "%"
 }, 
 {
     label: 'obesity',
-    key: 'obesity'
+    key: 'obesity',
+    format: "%"
+
 }];
 // create margins
 var margin = {top: 20, right: 20, bottom: 100, left: 100},
@@ -36,7 +43,10 @@ height = 500 - margin.top - margin.bottom;
 var x = d3.scaleLinear().range([0, width]);
 var y = d3.scaleLinear().range([height, 0]);
 
-// create the line function
+// Define the div for the tooltip
+var div = d3.select("body").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);
 
 // create the svg and store the chart space in the group svg
 var svg = d3.select("#scatter").append("svg")
@@ -60,11 +70,33 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
     dots = svg.selectAll("dot")
             .data(stateData)
     
-    dots.enter().append("circle")
+    var circles = dots.enter().append("circle")
         .attr("r", 5)
         .attr("cx", d => x(d.poverty)) // Scale the values
         .attr("cy", d => y(d.healthcare))
         .classed("circles", true);
+
+    // Add tooltips
+    circles.on("mouseover", function(d) {
+        div.transition()
+            .duration(200)
+            .style("opacity", 0.9);
+
+        let xValue = xValues[xLabelIndex]
+        let yValue = yValues[yLabelIndex]
+        
+        div.html(d.state + "</br>" +
+                `${xValue.label}: ${d[xValue.key]}${xValue.format}</br>` + 
+                `${yValue.label}: ${d[yValue.key]}${yValue.format}`)
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY) + "px");
+    });
+
+    circles.on("mouseout", function(d) {
+        div.transition()
+            .duration(200)
+            .style("opacity", 0);
+    });
 
     // add xAxis
     svg.append('g')
@@ -89,9 +121,8 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
             .text(d => d.label);
     
     xTexts.on("click", (d, i) => {
-        yLabelIndex = i;
-        console.log(i);
-        d3.selectAll(".xLabels").attr("class", (label, index) =>  index == i ? "label-selected yLabels": "label-unselected yLabels");
+        xLabelIndex = i;
+        d3.selectAll(".xLabels").attr("class", (label, index) =>  index == i ? "label-selected xLabels": "label-unselected xLabels");
         update("x", i);
     });
     
@@ -104,7 +135,7 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
             .attr("x", -height/2)
             .attr("dy", "1em")
             .style("text-anchor", "middle")
-            .attr("class", (d,i) =>  i == 0 ? "label-selected": "label-unselected")
+            .attr("class", (d,i) =>  i == 0 ? "label-selected yLabels": "label-unselected yLabels")
             .text(d => d.label);
     
     yTexts.on("click", (d, i) => {
@@ -116,11 +147,12 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
 
 function update(axis, index) {
     d3.csv("assets/data/data.csv").then(function(stateData) {
-        // turn selected data into numbers
+        // turn selected data into numbers - TODO this isn't updating correctly
+        
         stateData.forEach(d => {
             xKey = xValues[xLabelIndex].key
-            d[xKey] = +d[xKey];
             yKey = yValues[yLabelIndex].key
+            d[xKey] = +d[xKey];
             d[yKey] = +d[yKey];
         });
         
@@ -148,5 +180,5 @@ function update(axis, index) {
 
     });
 
-    console.log(xLabelIndex);
+    
 }
