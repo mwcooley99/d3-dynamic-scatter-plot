@@ -71,7 +71,7 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
             .data(stateData)
     
     var circles = dots.enter().append("circle")
-        .attr("r", 5)
+        .attr("r", 10)
         .attr("cx", d => x(d.poverty)) // Scale the values
         .attr("cy", d => y(d.healthcare))
         .classed("circles", true);
@@ -97,6 +97,18 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
             .duration(200)
             .style("opacity", 0);
     });
+
+    // Add text to bubbles
+    svg.selectAll("text")
+        .data(stateData).enter()
+        .append("text")
+        .attr("x", d => x(d.poverty))
+        .attr("y", d => y(d.healthcare))
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "central")
+        .attr("font-size", "12")
+        .classed("circle-labels", true)
+        .text(d => d.abbr)
 
     // add xAxis
     svg.append('g')
@@ -148,10 +160,10 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
 function update(axis, index) {
     d3.csv("assets/data/data.csv").then(function(stateData) {
         // turn selected data into numbers - TODO this isn't updating correctly
-        
+        var xKey = xValues[xLabelIndex].key
+        var yKey = yValues[yLabelIndex].key
         stateData.forEach(d => {
-            xKey = xValues[xLabelIndex].key
-            yKey = yValues[yLabelIndex].key
+            
             d[xKey] = +d[xKey];
             d[yKey] = +d[yKey];
         });
@@ -169,6 +181,13 @@ function update(axis, index) {
             .duration(750)
             .attr("cx", d => x(d[xKey])) // Scale the values
             .attr("cy", d => y(d[yKey]));
+
+        svg.selectAll(".circle-labels")
+            .data(stateData)
+            .transition()
+            .duration(750)
+            .attr("x", d => x(d[xKey]))
+            .attr("y", d => y(d[yKey]))
 
         svg.select(".xAxis").transition()
             .duration(750)

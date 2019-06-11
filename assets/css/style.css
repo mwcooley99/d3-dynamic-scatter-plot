@@ -40,6 +40,16 @@ body {
   fill-opacity: 0.4;
 }
 
+.circles {
+  fill: blue;
+  fill-opacity: 0.4;
+}
+
+.circle-labels {
+  font-size: 6,
+
+}
+
 div.tooltip {	
   position: absolute;			
   text-align: center;			
