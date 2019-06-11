@@ -1,43 +1,45 @@
-var dots;
 var xLabelIndex = 0, yLabelIndex = 0;
-var x
 
-var xValues = [{
-    label: 'poverty',
+function capitalizeFirstLetter(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+const xValues = [{
+    label: 'In Poverty (%)',
     key: 'poverty',
     format: "%"
-}, 
+},
 {
-    label: 'age',
+    label: 'Age (Median)',
     key: 'age',
     format: ""
-}, 
+},
 {
-    label: 'income',
+    label: 'Income (Median)',
     key: 'income',
     format: ""
 }];
 
-var yValues = [{
-    label: 'healthcare',
+const yValues = [{
+    label: 'Lacks Healthcare (%)',
     key: 'healthcare',
     format: "%"
 }, 
 {
-    label: 'smokes',
+    label: 'Smokes (%)',
     key: 'smokes',
     format: "%"
 }, 
 {
-    label: 'obesity',
+    label: 'Obesity (%)',
     key: 'obesity',
     format: "%"
 
 }];
 // create margins
 var margin = {top: 20, right: 20, bottom: 100, left: 100},
-width = 960 - margin.left - margin.right,
-height = 500 - margin.top - margin.bottom;
+width = 800 - margin.left - margin.right,
+height = 600 - margin.top - margin.bottom;
 
 // create x and y scales, attaching the range
 var x = d3.scaleLinear().range([0, width]);
@@ -64,20 +66,31 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
         d.healthcare = +d.healthcare;
     });
     
-    x.domain(d3.extent(stateData, d => d.poverty));
-    y.domain([0, d3.max(stateData, d => d.healthcare)]);
+    // Set axis scales
+    x.domain([.95 * d3.min(stateData, d => d.poverty), 1.05 * d3.max(stateData, d => d.poverty)]);
+    y.domain([.85 * d3.min(stateData, d => d.healthcare), 1.05 * d3.max(stateData, d => d.healthcare)]);
     
-    dots = svg.selectAll("dot")
-            .data(stateData)
-    
-    var circles = dots.enter().append("circle")
-        .attr("r", 10)
-        .attr("cx", d => x(d.poverty)) // Scale the values
-        .attr("cy", d => y(d.healthcare))
-        .classed("circles", true);
+    var circles = svg.selectAll("dot")
+        .data(stateData).enter().append("circle")
+            .attr("r", 8)
+            .attr("cx", d => x(d.poverty)) // Scale the values
+            .attr("cy", d => y(d.healthcare))
+            .classed("circles", true);
 
-    // Add tooltips
-    circles.on("mouseover", function(d) {
+    // Add text to bubbles
+    var circle_labels = svg.selectAll("text")
+        .data(stateData).enter()
+        .append("text")
+        .attr("x", d => x(d.poverty))
+        .attr("y", d => y(d.healthcare))
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "central")
+        .attr("font-size", "10")
+        .classed("circle-labels", true)
+        .text(d => d.abbr)
+
+    // Add tooltip
+    circle_labels.on("mouseover", function(d) {
         div.transition()
             .duration(200)
             .style("opacity", 0.9);
@@ -85,30 +98,19 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
         let xValue = xValues[xLabelIndex]
         let yValue = yValues[yLabelIndex]
         
-        div.html(d.state + "</br>" +
-                `${xValue.label}: ${d[xValue.key]}${xValue.format}</br>` + 
-                `${yValue.label}: ${d[yValue.key]}${yValue.format}`)
+        div.html(`<h6>${d.state}</h6>` +
+                `${capitalizeFirstLetter(xValue.key)}: ${d[xValue.key]}${xValue.format}</br>` + 
+                `${capitalizeFirstLetter(yValue.key)}: ${d[yValue.key]}${yValue.format}`)
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY) + "px");
     });
 
-    circles.on("mouseout", function(d) {
+    // hide tooltip
+    circle_labels.on("mouseout", function(d) {
         div.transition()
             .duration(200)
             .style("opacity", 0);
     });
-
-    // Add text to bubbles
-    svg.selectAll("text")
-        .data(stateData).enter()
-        .append("text")
-        .attr("x", d => x(d.poverty))
-        .attr("y", d => y(d.healthcare))
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "central")
-        .attr("font-size", "12")
-        .classed("circle-labels", true)
-        .text(d => d.abbr)
 
     // add xAxis
     svg.append('g')
@@ -121,17 +123,17 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
         .classed("yAxis", true)
         .call(d3.axisLeft(y));
 
-    // add xLabel
+    // add xLabels
     var xTexts = svg.selectAll("text.xLabels")
             .data(xValues).enter()
         .append("text")
-    
-    xTexts.attr("x", d => width/2)
+            .attr("x", d => width/2)
             .attr("y", (d, i) => height + margin.top + 20 * (i + 1))
             .style("text-anchor", "middle")
             .attr("class", (d,i) =>  i == 0 ? "label-selected xLabels": "label-unselected xLabels")
             .text(d => d.label);
     
+    // Click a label to change x display data
     xTexts.on("click", (d, i) => {
         xLabelIndex = i;
         d3.selectAll(".xLabels").attr("class", (label, index) =>  index == i ? "label-selected xLabels": "label-unselected xLabels");
@@ -150,6 +152,7 @@ d3.csv("assets/data/data.csv").then(function(stateData) {
             .attr("class", (d,i) =>  i == 0 ? "label-selected yLabels": "label-unselected yLabels")
             .text(d => d.label);
     
+    // Click a label to change y display data
     yTexts.on("click", (d, i) => {
         yLabelIndex = i;
         d3.selectAll(".yLabels").attr("class", (label, index) =>  index == i ? "label-selected yLabels": "label-unselected yLabels");
@@ -169,12 +172,10 @@ function update(axis, index) {
         });
         
         // re-scale axes
-        x.domain(d3.extent(stateData, d => d[xKey]));
-        y.domain([0, d3.max(stateData, d => d[yKey])]);
+        x.domain([.95 * d3.min(stateData, d => d[xKey]),1.05 * d3.max(stateData, d => d[xKey])]);
+        y.domain([.85 * d3.min(stateData, d => d[yKey]), 1.05 * d3.max(stateData, d => d[yKey])]);
 
-        // var svg = d3.select("body").transition();
-
-        // transition 
+        // transitions
         svg.selectAll(".circles")
             .data(stateData)
             .transition()
